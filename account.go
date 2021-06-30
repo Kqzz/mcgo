@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -67,10 +69,66 @@ func (account *MojangAccount) nameChangeInfo() (nameChangeInfoResponse, error) {
 	return parsedNameChangeInfo, nil
 }
 
-func (account *MojangAccount) changeName(username string, changeTime time.Time) (string, error) {
-	if changeTime.After(time.Now()) {
-		// wait until changeTime
-		time.Sleep(time.Until(changeTime))
+type nameChangeReturn struct {
+	account     MojangAccount
+	username    string
+	changedName bool
+	statusCode  int
+	sendTime    time.Time
+	receiveTime time.Time
+}
+
+func (account *MojangAccount) changeName(username string, changeTime time.Time) (nameChangeReturn, error) {
+
+	headers := make(http.Header)
+	headers.Add("Authorization", "Bearer "+account.bearer)
+	payload, err := generatePayload("PUT", fmt.Sprintf("https://api.minecraftservices.com/minecraft/profile/name/%s", username), headers)
+
+	recvd := make([]byte, 12)
+
+	if err != nil {
+		return nameChangeReturn{
+			account:     MojangAccount{},
+			username:    username,
+			changedName: false,
+			statusCode:  0,
+			sendTime:    time.Time{},
+			receiveTime: time.Time{},
+		}, err
 	}
-	return fmt.Sprintf("Changed name of %v to %v", account.email, username), nil
+
+	if changeTime.After(time.Now()) {
+		// wait until 20s before nc
+		time.Sleep(time.Until(changeTime) - time.Second*20)
+	}
+
+	conn, err := tls.Dial("tcp", "api.minecraftservices.com"+":443", nil)
+	conn.Write([]byte(payload))
+	sendTime := time.Now()
+	if err != nil {
+		return nameChangeReturn{
+			account:     MojangAccount{},
+			username:    username,
+			changedName: false,
+			statusCode:  0,
+			sendTime:    sendTime,
+			receiveTime: time.Time{},
+		}, err
+	}
+
+	conn.Write([]byte("\r\n"))
+
+	conn.Read(recvd)
+	recvTime := time.Now()
+	status, err := strconv.Atoi(string(recvd[9:12]))
+
+	toRet := nameChangeReturn{
+		account:     *account,
+		username:    username,
+		changedName: status < 300,
+		statusCode:  status,
+		sendTime:    sendTime,
+		receiveTime: recvTime,
+	}
+	return toRet, nil
 }

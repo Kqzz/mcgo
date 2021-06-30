@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -97,4 +99,19 @@ func nameAvailability(username string) (string, error) {
 	}
 
 	return "", errors.New(fmt.Sprintf("This should not be possible! | Got status %v on request for name availability", resp.StatusCode))
+}
+
+func generatePayload(method string, reqUrl string, headers http.Header) (string, error) {
+	parsedUrl, err := url.Parse(reqUrl)
+	if err != nil {
+		return "", err
+	}
+	host := parsedUrl.Host
+	path := parsedUrl.Path
+	var headerString string
+	for header, value := range headers {
+		headerString += fmt.Sprintf("%s: %s\r\n", header, value[0])
+	}
+	payload := fmt.Sprintf("%s %s HTTP/1.1\r\nHost: %s\r\n%s\r\n", strings.ToUpper(method), path, host, headerString)
+	return payload, nil
 }
