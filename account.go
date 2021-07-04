@@ -315,11 +315,18 @@ type nameChangeReturn struct {
 	receiveTime time.Time
 }
 
-func (account *MCaccount) changeName(username string, changeTime time.Time) (nameChangeReturn, error) {
+func (account *MCaccount) changeName(username string, changeTime time.Time, createProfile bool) (nameChangeReturn, error) {
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "Bearer "+account.bearer)
-	payload, err := generatePayload("PUT", fmt.Sprintf("https://api.minecraftservices.com/minecraft/profile/name/%s", username), headers)
+	headers.Set("Accept", "application/json")
+	var err error
+	var payload string
+	if createProfile {
+		payload, err = generatePayload("POST", "https://api.minecraftservices.com/minecraft/profile", headers, fmt.Sprintf(`{"profileName": "%s"}`, username))
+	} else {
+		payload, err = generatePayload("PUT", fmt.Sprintf("https://api.minecraftservices.com/minecraft/profile/name/%s", username), headers, "")
+	}
 
 	recvd := make([]byte, 12)
 
