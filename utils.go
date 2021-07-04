@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -19,29 +18,10 @@ type Droptime struct {
 
 // https://stackoverflow.com/a/68240817/13312615
 func SameErrorMessage(err, target error) bool {
-    if target == nil || err == nil {
-        return err == target
-    }
-    return err.Error() == target.Error()
-}
-
-func getDroptimeKqzzAPI(username string) (Droptime, error) {
-	url := fmt.Sprintf("https://droptime-o7u637bu7a-uc.a.run.app/droptime/%v", username)
-	resp, err := http.Get(url)
-	if err != nil {
-		return Droptime{}, err
+	if target == nil || err == nil {
+		return err == target
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return Droptime{}, errors.New(fmt.Sprintf("%v is not dropping!", username))
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	bodyStr := string(body)
-	droptimeInt, err := strconv.ParseInt(bodyStr, 10, 64)
-	return Droptime{
-		droptime: time.Unix(droptimeInt, 0),
-		username: username,
-	}, nil
+	return err.Error() == target.Error()
 }
 
 type TeunResponse struct {
