@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func (account *MojangAccount) authenticatedReq(method string, url string, body io.Reader) (*http.Request, error) {
+func (account *MCaccount) authenticatedReq(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (account *MojangAccount) authenticatedReq(method string, url string, body i
 	return req, nil
 }
 
-type MojangAccount struct {
+type MCaccount struct {
 	email             string
 	password          string
 	securityQuestions []SqAnswer
@@ -50,7 +50,7 @@ type AuthenticateReqResp struct {
 	Clienttoken string `json:"clientToken"`
 }
 
-func (account *MojangAccount) authenticate() error {
+func (account *MCaccount) authenticate() error {
 	payload := fmt.Sprintf(`{
     "agent": {                              
         "name": "Minecraft",                
@@ -108,7 +108,7 @@ type SqAnswer struct {
 	} `json:"question"`
 }
 
-func (account *MojangAccount) loadSecurityQuestions() error {
+func (account *MCaccount) loadSecurityQuestions() error {
 	req, err := account.authenticatedReq("GET", "https://api.mojang.com/user/security/challenges", nil)
 	if err != nil {
 		return err
@@ -143,7 +143,41 @@ func (account *MojangAccount) loadSecurityQuestions() error {
 	return nil
 }
 
-func (account *MojangAccount) needToAnswer() (bool, error) {
+type accInfoResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (account *MCaccount) loadAccountInfo() error {
+	req, err := account.authenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		return errors.New("Account does not own minecraft!")
+	}
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+
+	var respJson accInfoResponse
+
+	json.Unmarshal(respBytes, &respJson)
+
+	account.username = respJson.Name
+	account.uuid = respJson.ID
+
+	return nil
+}
+
+func (account *MCaccount) needToAnswer() (bool, error) {
 	req, err := account.authenticatedReq("GET", "https://api.mojang.com/user/security/location", nil)
 	if err != nil {
 		return false, err
@@ -154,6 +188,7 @@ func (account *MojangAccount) needToAnswer() (bool, error) {
 	if err != nil {
 		return true, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode == 204 {
 		return false, nil
@@ -169,7 +204,7 @@ type submitPostJson struct {
 	Answer string `json:"answer"`
 }
 
-func (account *MojangAccount) submitAnswers() error {
+func (account *MCaccount) submitAnswers() error {
 	if len(account.securityAnswers) != 3 {
 		return errors.New("Not enough security question answers provided!")
 	}
@@ -190,16 +225,20 @@ func (account *MojangAccount) submitAnswers() error {
 	}
 
 	resp, err := http.DefaultClient.Do(req)
+
 	if resp.StatusCode == 204 {
 		return nil
 	}
+
+	defer resp.Body.Close()
+
 	if resp.StatusCode == 403 {
 		return errors.New("At least one security question answer was incorrect!")
 	}
 	return errors.New(fmt.Sprintf("Got status %v on post request for sqs", resp.Status))
 }
 
-func (account *MojangAccount) MojangAuthenticate() error {
+func (account *MCaccount) MojangAuthenticate() error {
 	err := account.authenticate()
 	if err != nil {
 		return err
@@ -237,7 +276,7 @@ type nameChangeInfoResponse struct {
 	Namechangeallowed bool      `json:"nameChangeAllowed"`
 }
 
-func (account *MojangAccount) nameChangeInfo() (nameChangeInfoResponse, error) {
+func (account *MCaccount) nameChangeInfo() (nameChangeInfoResponse, error) {
 	client := &http.Client{}
 	req, err := account.authenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile/namechange", nil)
 
@@ -268,7 +307,7 @@ func (account *MojangAccount) nameChangeInfo() (nameChangeInfoResponse, error) {
 }
 
 type nameChangeReturn struct {
-	account     MojangAccount
+	account     MCaccount
 	username    string
 	changedName bool
 	statusCode  int
@@ -276,7 +315,7 @@ type nameChangeReturn struct {
 	receiveTime time.Time
 }
 
-func (account *MojangAccount) changeName(username string, changeTime time.Time) (nameChangeReturn, error) {
+func (account *MCaccount) changeName(username string, changeTime time.Time) (nameChangeReturn, error) {
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "Bearer "+account.bearer)
@@ -286,7 +325,7 @@ func (account *MojangAccount) changeName(username string, changeTime time.Time) 
 
 	if err != nil {
 		return nameChangeReturn{
-			account:     MojangAccount{},
+			account:     MCaccount{},
 			username:    username,
 			changedName: false,
 			statusCode:  0,
@@ -305,7 +344,7 @@ func (account *MojangAccount) changeName(username string, changeTime time.Time) 
 	sendTime := time.Now()
 	if err != nil {
 		return nameChangeReturn{
-			account:     MojangAccount{},
+			account:     MCaccount{},
 			username:    username,
 			changedName: false,
 			statusCode:  0,

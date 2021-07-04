@@ -17,6 +17,14 @@ type Droptime struct {
 	username string
 }
 
+// https://stackoverflow.com/a/68240817/13312615
+func SameErrorMessage(err, target error) bool {
+    if target == nil || err == nil {
+        return err == target
+    }
+    return err.Error() == target.Error()
+}
+
 func getDroptimeKqzzAPI(username string) (Droptime, error) {
 	url := fmt.Sprintf("https://droptime-o7u637bu7a-uc.a.run.app/droptime/%v", username)
 	resp, err := http.Get(url)
