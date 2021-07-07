@@ -71,7 +71,7 @@ type XBLSignInResp struct {
 	} `json:"DisplayClaims"`
 }
 
-type XSTSPostBody struct {
+type xSTSPostBody struct {
 	Properties struct {
 		Sandboxid  string   `json:"SandboxId"`
 		Usertokens []string `json:"UserTokens"`
@@ -80,7 +80,7 @@ type XSTSPostBody struct {
 	Tokentype    string `json:"TokenType"`
 }
 
-type XSTSAuthorizeResponse struct {
+type xSTSAuthorizeResponse struct {
 	Issueinstant  time.Time `json:"IssueInstant"`
 	Notafter      time.Time `json:"NotAfter"`
 	Token         string    `json:"Token"`
@@ -91,19 +91,19 @@ type XSTSAuthorizeResponse struct {
 	} `json:"DisplayClaims"`
 }
 
-type XSTSAuthorizeResponseFail struct {
+type xSTSAuthorizeResponseFail struct {
 	Identity string `json:"Identity"`
 	Xerr     int64  `json:"XErr"`
 	Message  string `json:"Message"`
 	Redirect string `json:"Redirect"`
 }
 
-type MsGetMojangbearerBody struct {
+type msGetMojangbearerBody struct {
 	Identitytoken       string `json:"identityToken"`
 	Ensurelegacyenabled bool   `json:"ensureLegacyEnabled"`
 }
 
-type MsGetMojangBearerResponse struct {
+type msGetMojangBearerResponse struct {
 	TokenType    string `json:"token_type"`
 	ExpiresIn    int    `json:"expires_in"`
 	Scope        string `json:"scope"`
@@ -186,7 +186,7 @@ func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) e
 			uhs := respBody.Displayclaims.Xui[0].Uhs
 			XBLToken := respBody.Token
 
-			xstsBody := XSTSPostBody{
+			xstsBody := xSTSPostBody{
 				Properties: struct {
 					Sandboxid  string   "json:\"SandboxId\""
 					Usertokens []string "json:\"UserTokens\""
@@ -218,7 +218,7 @@ func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) e
 			respBodyBytes, err = ioutil.ReadAll(resp.Body)
 
 			if resp.StatusCode == 401 {
-				var authorizeXstsFail XSTSAuthorizeResponseFail
+				var authorizeXstsFail xSTSAuthorizeResponseFail
 				json.Unmarshal(respBodyBytes, &authorizeXstsFail)
 				switch authorizeXstsFail.Xerr {
 				case 2148916238:
@@ -236,12 +236,12 @@ func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) e
 				}
 			}
 
-			var xstsAuthorizeResp XSTSAuthorizeResponse
+			var xstsAuthorizeResp xSTSAuthorizeResponse
 			json.Unmarshal(respBodyBytes, &xstsAuthorizeResp)
 
 			xstsToken := xstsAuthorizeResp.Token
 
-			mojangBearerBody := MsGetMojangbearerBody{
+			mojangBearerBody := msGetMojangbearerBody{
 				Identitytoken:       "XBL3.0 x=" + uhs + ";" + xstsToken,
 				Ensurelegacyenabled: true,
 			}
@@ -265,11 +265,11 @@ func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) e
 
 			fmt.Println(string(mcBearerResponseBytes))
 
-			var mcBearerResp MsGetMojangBearerResponse
+			var mcBearerResp msGetMojangBearerResponse
 
 			json.Unmarshal(mcBearerResponseBytes, &mcBearerResp)
 
-			account.bearer = mcBearerResp.AccessToken
+			account.Bearer = mcBearerResp.AccessToken
 
 		}
 	}

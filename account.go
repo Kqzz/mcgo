@@ -18,26 +18,26 @@ func (account *MCaccount) authenticatedReq(method string, url string, body io.Re
 	if err != nil {
 		return nil, err
 	}
-	if account.bearer == "" {
+	if account.Bearer == "" {
 		return nil, errors.New("Account is not authenticated!")
 	}
-	req.Header.Add("Authorization", "Bearer "+account.bearer)
+	req.Header.Add("Authorization", "Bearer "+account.Bearer)
 	req.Header.Set("Content-Type", "application/json")
 
 	return req, nil
 }
 
 type MCaccount struct {
-	email             string
-	password          string
-	securityQuestions []SqAnswer
-	securityAnswers   []string
-	bearer            string
-	uuid              string
-	username          string
+	Email             string
+	Password          string
+	SecurityQuestions []SqAnswer
+	SecurityAnswers   []string
+	Bearer            string
+	Uuid              string
+	Username          string
 }
 
-type AuthenticateReqResp struct {
+type authenticateReqResp struct {
 	User struct {
 		Properties []struct {
 			Name  string `json:"name"`
@@ -59,7 +59,7 @@ func (account *MCaccount) authenticate() error {
     "username": "%s",      
     "password": "%s",
 	"requestUser": true
-}`, account.email, account.password)
+}`, account.Email, account.Password)
 
 	u := bytes.NewReader([]byte(payload))
 	request, err := http.NewRequest("POST", "https://authserver.mojang.com/authenticate", u)
@@ -78,17 +78,17 @@ func (account *MCaccount) authenticate() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		var AccountInfo AuthenticateReqResp
+		var AccountInfo authenticateReqResp
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
 		json.Unmarshal(b, &AccountInfo)
 
-		account.bearer = AccountInfo.Accesstoken
-		account.username = AccountInfo.User.Username
-		account.uuid = AccountInfo.User.ID
-		account.bearer = AccountInfo.Accesstoken
+		account.Bearer = AccountInfo.Accesstoken
+		account.Username = AccountInfo.User.Username
+		account.Uuid = AccountInfo.User.ID
+		account.Bearer = AccountInfo.Accesstoken
 
 		return nil
 
@@ -138,7 +138,7 @@ func (account *MCaccount) loadSecurityQuestions() error {
 		return err
 	}
 
-	account.securityQuestions = sqAnswers
+	account.SecurityQuestions = sqAnswers
 
 	return nil
 }
@@ -171,8 +171,8 @@ func (account *MCaccount) loadAccountInfo() error {
 
 	json.Unmarshal(respBytes, &respJson)
 
-	account.username = respJson.Name
-	account.uuid = respJson.ID
+	account.Username = respJson.Name
+	account.Uuid = respJson.ID
 
 	return nil
 }
@@ -205,15 +205,15 @@ type submitPostJson struct {
 }
 
 func (account *MCaccount) submitAnswers() error {
-	if len(account.securityAnswers) != 3 {
+	if len(account.SecurityAnswers) != 3 {
 		return errors.New("Not enough security question answers provided!")
 	}
-	if len(account.securityQuestions) != 3 {
+	if len(account.SecurityQuestions) != 3 {
 		return errors.New("Security questions not properly loaded!")
 	}
 	var jsonContent []submitPostJson
-	for i, sq := range account.securityQuestions {
-		jsonContent = append(jsonContent, submitPostJson{ID: sq.Answer.ID, Answer: account.securityAnswers[i]})
+	for i, sq := range account.SecurityQuestions {
+		jsonContent = append(jsonContent, submitPostJson{ID: sq.Answer.ID, Answer: account.SecurityAnswers[i]})
 	}
 	jsonStr, err := json.Marshal(jsonContent)
 	if err != nil {
@@ -238,7 +238,7 @@ func (account *MCaccount) submitAnswers() error {
 	return errors.New(fmt.Sprintf("Got status %v on post request for sqs", resp.Status))
 }
 
-func (account *MCaccount) MojangAuthenticate() error {
+func (account *MCaccount) mojangAuthenticate() error {
 	err := account.authenticate()
 	if err != nil {
 		return err
@@ -249,7 +249,7 @@ func (account *MCaccount) MojangAuthenticate() error {
 		return err
 	}
 
-	if len(account.securityQuestions) == 0 {
+	if len(account.SecurityQuestions) == 0 {
 		return nil
 	}
 
@@ -318,7 +318,7 @@ type nameChangeReturn struct {
 func (account *MCaccount) changeName(username string, changeTime time.Time, createProfile bool) (nameChangeReturn, error) {
 
 	headers := make(http.Header)
-	headers.Add("Authorization", "Bearer "+account.bearer)
+	headers.Add("Authorization", "Bearer "+account.Bearer)
 	headers.Set("Accept", "application/json")
 	var err error
 	var payload string
