@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func (account *MCaccount) authenticatedReq(method string, url string, body io.Reader) (*http.Request, error) {
+func (account *MCaccount) AuthenticatedReq(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ type MCaccount struct {
 	SecurityQuestions []SqAnswer
 	SecurityAnswers   []string
 	Bearer            string
-	Uuid              string
+	UUID              string
 	Username          string
 }
 
@@ -87,7 +87,7 @@ func (account *MCaccount) authenticate() error {
 
 		account.Bearer = AccountInfo.Accesstoken
 		account.Username = AccountInfo.User.Username
-		account.Uuid = AccountInfo.User.ID
+		account.UUID = AccountInfo.User.ID
 		account.Bearer = AccountInfo.Accesstoken
 
 		return nil
@@ -109,7 +109,7 @@ type SqAnswer struct {
 }
 
 func (account *MCaccount) loadSecurityQuestions() error {
-	req, err := account.authenticatedReq("GET", "https://api.mojang.com/user/security/challenges", nil)
+	req, err := account.AuthenticatedReq("GET", "https://api.mojang.com/user/security/challenges", nil)
 	if err != nil {
 		return err
 	}
@@ -148,8 +148,8 @@ type accInfoResponse struct {
 	Name string `json:"name"`
 }
 
-func (account *MCaccount) loadAccountInfo() error {
-	req, err := account.authenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
+func (account *MCaccount) LoadAccountInfo() error {
+	req, err := account.AuthenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
 	if err != nil {
 		return err
 	}
@@ -172,13 +172,13 @@ func (account *MCaccount) loadAccountInfo() error {
 	json.Unmarshal(respBytes, &respJson)
 
 	account.Username = respJson.Name
-	account.Uuid = respJson.ID
+	account.UUID = respJson.ID
 
 	return nil
 }
 
 func (account *MCaccount) needToAnswer() (bool, error) {
-	req, err := account.authenticatedReq("GET", "https://api.mojang.com/user/security/location", nil)
+	req, err := account.AuthenticatedReq("GET", "https://api.mojang.com/user/security/location", nil)
 	if err != nil {
 		return false, err
 	}
@@ -219,7 +219,7 @@ func (account *MCaccount) submitAnswers() error {
 	if err != nil {
 		return err
 	}
-	req, err := account.authenticatedReq("POST", "https://api.mojang.com/user/security/location", bytes.NewBuffer([]byte(jsonStr)))
+	req, err := account.AuthenticatedReq("POST", "https://api.mojang.com/user/security/location", bytes.NewBuffer([]byte(jsonStr)))
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (account *MCaccount) submitAnswers() error {
 	return errors.New(fmt.Sprintf("Got status %v on post request for sqs", resp.Status))
 }
 
-func (account *MCaccount) mojangAuthenticate() error {
+func (account *MCaccount) MojangAuthenticate() error {
 	err := account.authenticate()
 	if err != nil {
 		return err
@@ -276,9 +276,9 @@ type nameChangeInfoResponse struct {
 	Namechangeallowed bool      `json:"nameChangeAllowed"`
 }
 
-func (account *MCaccount) nameChangeInfo() (nameChangeInfoResponse, error) {
+func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 	client := &http.Client{}
-	req, err := account.authenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile/namechange", nil)
+	req, err := account.AuthenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile/namechange", nil)
 
 	if err != nil {
 		return nameChangeInfoResponse{}, err
@@ -315,7 +315,7 @@ type nameChangeReturn struct {
 	receiveTime time.Time
 }
 
-func (account *MCaccount) changeName(username string, changeTime time.Time, createProfile bool) (nameChangeReturn, error) {
+func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (nameChangeReturn, error) {
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "Bearer "+account.Bearer)

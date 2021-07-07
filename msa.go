@@ -50,7 +50,7 @@ type result struct {
 	Err   error
 }
 
-type XBLSignInBody struct {
+type xBLSignInBody struct {
 	Properties struct {
 		Authmethod string `json:"AuthMethod"`
 		Sitename   string `json:"SiteName"`
@@ -113,7 +113,7 @@ type msGetMojangBearerResponse struct {
 	Foci         string `json:"foci"`
 }
 
-func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) error {
+func (account *MCaccount) MicrosoftAuthenticate(clientID, ClientSecret string) error {
 	rand.Seed(time.Now().UnixNano())
 	msConfig := &oauth2.Config{
 		ClientID:     clientID,
@@ -145,7 +145,7 @@ func (account *MCaccount) microsoftAuthenticate(clientID, ClientSecret string) e
 				},
 			}
 
-			data := XBLSignInBody{
+			data := xBLSignInBody{
 				Properties: struct {
 					Authmethod string "json:\"AuthMethod\""
 					Sitename   string "json:\"SiteName\""
