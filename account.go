@@ -27,6 +27,13 @@ func (account *MCaccount) AuthenticatedReq(method string, url string, body io.Re
 	return req, nil
 }
 
+type AccType string
+
+const (
+	Ms AccType = "ms"
+	Mj AccType = "mj"
+)
+
 type MCaccount struct {
 	Email             string
 	Password          string
@@ -35,6 +42,7 @@ type MCaccount struct {
 	Bearer            string
 	UUID              string
 	Username          string
+	Type              AccType
 }
 
 type authenticateReqResp struct {
