@@ -344,7 +344,7 @@ func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 	return parsedNameChangeInfo, nil
 }
 
-type nameChangeReturn struct {
+type NameChangeReturn struct {
 	account     MCaccount
 	username    string
 	changedName bool
@@ -353,7 +353,7 @@ type nameChangeReturn struct {
 	receiveTime time.Time
 }
 
-func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (nameChangeReturn, error) {
+func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (NameChangeReturn, error) {
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "Bearer "+account.Bearer)
@@ -369,7 +369,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	recvd := make([]byte, 12)
 
 	if err != nil {
-		return nameChangeReturn{
+		return NameChangeReturn{
 			account:     MCaccount{},
 			username:    username,
 			changedName: false,
@@ -388,7 +388,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	conn.Write([]byte(payload))
 	sendTime := time.Now()
 	if err != nil {
-		return nameChangeReturn{
+		return NameChangeReturn{
 			account:     MCaccount{},
 			username:    username,
 			changedName: false,
@@ -404,7 +404,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	recvTime := time.Now()
 	status, err := strconv.Atoi(string(recvd[9:12]))
 
-	toRet := nameChangeReturn{
+	toRet := NameChangeReturn{
 		account:     *account,
 		username:    username,
 		changedName: status < 300,
