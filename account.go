@@ -36,14 +36,15 @@ const (
 
 // TODO: Use RequestError for status-code-related errors
 type RequestError struct {
-    StatusCode int
-    Err error
+	StatusCode int
+	Err        error
 }
 
 func (r *RequestError) Error() string {
-    return r.Err.Error()
+	return r.Err.Error()
 }
 
+// represents a minecraft account
 type MCaccount struct {
 	Email             string
 	Password          string
@@ -53,6 +54,7 @@ type MCaccount struct {
 	UUID              string
 	Username          string
 	Type              AccType
+	Authenticated     bool
 }
 
 type authenticateReqResp struct {
@@ -166,6 +168,7 @@ type accInfoResponse struct {
 	Name string `json:"name"`
 }
 
+// load account information (username, uuid) into accounts attributes, if not already there. When using Mojang authentication it is not necessary to load this info, as it will be automatically loaded.
 func (account *MCaccount) LoadAccountInfo() error {
 	req, err := account.AuthenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
 	if err != nil {
@@ -256,6 +259,7 @@ func (account *MCaccount) submitAnswers() error {
 	return errors.New(fmt.Sprintf("Got status %v on post request for sqs", resp.Status))
 }
 
+// Runs all steps necessary to have a fully authenticated mojang account. It will submit email & pass and securitty questions (if necessary).
 func (account *MCaccount) MojangAuthenticate() error {
 	err := account.authenticate()
 	if err != nil {
@@ -288,12 +292,14 @@ func (account *MCaccount) MojangAuthenticate() error {
 	return nil
 }
 
+// Holds name change information for an account, the time the current account was created, it's name was most recently changed, and if it can currently change its name.
 type nameChangeInfoResponse struct {
 	Changedat         time.Time `json:"changedAt"`
 	Createdat         time.Time `json:"createdAt"`
 	Namechangeallowed bool      `json:"nameChangeAllowed"`
 }
 
+// grab information on the availability of name change for this account
 func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 	client := &http.Client{}
 	req, err := account.AuthenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile/namechange", nil)
@@ -315,13 +321,13 @@ func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 
 	if resp.StatusCode >= 400 {
 		return nameChangeInfoResponse{
-			Changedat:         time.Time{},
-			Createdat:         time.Time{},
-			Namechangeallowed: false,
-		},  &RequestError{
-			StatusCode: resp.StatusCode,
-			Err:        errors.New("failed to grab name change info"),
-		}
+				Changedat:         time.Time{},
+				Createdat:         time.Time{},
+				Namechangeallowed: false,
+			}, &RequestError{
+				StatusCode: resp.StatusCode,
+				Err:        errors.New("failed to grab name change info"),
+			}
 	}
 
 	var parsedNameChangeInfo nameChangeInfoResponse
