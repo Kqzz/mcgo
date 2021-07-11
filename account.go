@@ -183,7 +183,10 @@ func (account *MCaccount) LoadAccountInfo() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return errors.New("Account does not own minecraft!")
+		return &RequestError{
+			StatusCode: resp.StatusCode,
+			Err:        errors.New("account does not own minecraft"),
+		}
 	}
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
