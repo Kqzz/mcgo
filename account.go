@@ -272,6 +272,7 @@ func (account *MCaccount) MojangAuthenticate() error {
 	}
 
 	if len(account.SecurityQuestions) == 0 {
+		account.Authenticated = true
 		return nil
 	}
 
@@ -281,6 +282,7 @@ func (account *MCaccount) MojangAuthenticate() error {
 	}
 
 	if !answerNeeded {
+		account.Authenticated = true
 		return nil
 	}
 
@@ -289,6 +291,7 @@ func (account *MCaccount) MojangAuthenticate() error {
 		return err
 	}
 
+	account.Authenticated = true
 	return nil
 }
 
