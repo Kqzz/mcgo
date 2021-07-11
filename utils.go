@@ -24,7 +24,7 @@ func SameErrorMessage(err, target error) bool {
 	return err.Error() == target.Error()
 }
 
-type TeunResponse struct {
+type teunResponse struct {
 	UNIX int64  `json:"UNIX"`
 	UTC  string `json:"UTC"`
 }
@@ -38,7 +38,7 @@ func getDroptimeTeunAPI(username string) (Droptime, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		droptime := TeunResponse{
+		droptime := teunResponse{
 			UNIX: 0,
 			UTC:  "",
 		}

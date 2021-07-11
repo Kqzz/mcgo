@@ -34,6 +34,16 @@ const (
 	Mj AccType = "mj"
 )
 
+// TODO: Use RequestError for status-code-related errors
+type RequestError struct {
+    StatusCode int
+    Err error
+}
+
+func (r *RequestError) Error() string {
+    return r.Err.Error()
+}
+
 type MCaccount struct {
 	Email             string
 	Password          string
@@ -301,6 +311,17 @@ func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nameChangeInfoResponse{}, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nameChangeInfoResponse{
+			Changedat:         time.Time{},
+			Createdat:         time.Time{},
+			Namechangeallowed: false,
+		},  &RequestError{
+			StatusCode: resp.StatusCode,
+			Err:        errors.New("failed to grab name change info"),
+		}
 	}
 
 	var parsedNameChangeInfo nameChangeInfoResponse
