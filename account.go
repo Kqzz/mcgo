@@ -298,6 +298,78 @@ func (account *MCaccount) MojangAuthenticate() error {
 	return nil
 }
 
+type HasGcAppliedResp struct {
+	Path             string `json:"path"`
+	ErrorType        string `json:"errorType"`
+	Error            string `json:"error"`
+	ErrorMessage     string `json:"errorMessage"`
+	DeveloperMessage string `json:"developerMessage"`
+	Details          struct {
+		Status string `json:"status"`
+	} `json:"details"`
+}
+
+func (account *MCaccount) HasGcApplied() (bool, error) {
+	bodyStr := `{"profileName": "test"}`
+	req, err := account.AuthenticatedReq("POST", "https://api.minecraftservices.com/minecraft/profile", bytes.NewReader([]byte(bodyStr)))
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 200 {
+		return false, &RequestError{
+			StatusCode: resp.StatusCode,
+			Err:        errors.New("successfully created profile with name test.. unintended behavior, function is meant to check if gc is applied."),
+		}
+	} else if resp.StatusCode == 401 {
+		return false, &RequestError{
+			StatusCode: resp.StatusCode,
+			Err:        errors.New("Received unauthorized response!"),
+		}
+	} else if resp.StatusCode == 400 {
+		var respError HasGcAppliedResp
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, err
+		}
+
+		err = json.Unmarshal(bodyBytes, &respError)
+		if err != nil {
+			return false, err
+		}
+
+		var hasGc bool
+
+		switch respError.Details.Status {
+		case "ALREADY_REGISTERED", "NOT_ENTITLED":
+			{
+				hasGc = false
+			}
+		case "DUPLICATE", "NOT_ALLOWED":
+			{
+				hasGc = true
+			}
+		default:
+			{
+				hasGc = false
+			}
+		}
+
+		return hasGc, nil
+
+	}
+
+	return false, fmt.Errorf("Got status %v, expected 200, 401, or 400.", resp.StatusCode)
+
+}
+
 // Holds name change information for an account, the time the current account was created, it's name was most recently changed, and if it can currently change its name.
 type nameChangeInfoResponse struct {
 	Changedat         time.Time `json:"changedAt"`
