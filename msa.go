@@ -223,15 +223,15 @@ func (account *MCaccount) MicrosoftAuthenticate(clientID, ClientSecret string) e
 				switch authorizeXstsFail.Xerr {
 				case 2148916238:
 					{
-						return errors.New("Microsoft account belongs to someone under 18! add to family for this to work!")
+						return errors.New("microsoft account belongs to someone under 18! add to family for this to work")
 					}
 				case 2148916233:
 					{
-						return errors.New("You have no xbox account! Sign up for one to continue.")
+						return errors.New("you have no xbox account! Sign up for one to continue")
 					}
 				default:
 					{
-						return errors.New(fmt.Sprintf("Got error code %v when trying to authorize XSTS token.", authorizeXstsFail.Xerr))
+						return fmt.Errorf("got error code %v when trying to authorize XSTS token", authorizeXstsFail.Xerr)
 					}
 				}
 			}
@@ -248,6 +248,10 @@ func (account *MCaccount) MicrosoftAuthenticate(clientID, ClientSecret string) e
 
 			mojangBearerBodyEncoded, err := json.Marshal(mojangBearerBody)
 
+			if err != nil {
+				return err
+			}
+
 			req, err = http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewReader(mojangBearerBodyEncoded))
 
 			req.Header.Set("Content-Type", "application/json")
@@ -262,6 +266,10 @@ func (account *MCaccount) MicrosoftAuthenticate(clientID, ClientSecret string) e
 			}
 
 			mcBearerResponseBytes, err := ioutil.ReadAll(resp.Body)
+
+			if err != nil {
+				return err
+			}
 
 			fmt.Println(string(mcBearerResponseBytes))
 

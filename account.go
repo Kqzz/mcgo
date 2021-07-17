@@ -19,7 +19,7 @@ func (account *MCaccount) AuthenticatedReq(method string, url string, body io.Re
 		return nil, err
 	}
 	if account.Bearer == "" {
-		return nil, errors.New("Account is not authenticated!")
+		return nil, errors.New("account is not authenticated")
 	}
 	req.Header.Add("Authorization", "Bearer "+account.Bearer)
 	req.Header.Set("Content-Type", "application/json")
@@ -113,9 +113,9 @@ func (account *MCaccount) authenticate() error {
 		return nil
 
 	} else if resp.StatusCode == 403 {
-		return errors.New("Invalid email or password!")
+		return errors.New("invalid email or password")
 	}
-	return errors.New("Reached end of authenticate function! Shouldn't be possible. most likely 'failed to auth' status code changed.")
+	return errors.New("reached end of authenticate function! Shouldn't be possible. most likely 'failed to auth' status code changed")
 }
 
 type SqAnswer struct {
@@ -140,7 +140,7 @@ func (account *MCaccount) loadSecurityQuestions() error {
 	}
 
 	if resp.StatusCode >= 400 {
-		return errors.New(fmt.Sprintf("Got status %v when requesting security questions!", resp.Status))
+		return fmt.Errorf("got status %v when requesting security questions", resp.Status)
 	}
 
 	defer resp.Body.Close()
@@ -191,6 +191,10 @@ func (account *MCaccount) LoadAccountInfo() error {
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 
+	if err != nil {
+		return err
+	}
+
 	var respJson accInfoResponse
 
 	json.Unmarshal(respBytes, &respJson)
@@ -220,7 +224,7 @@ func (account *MCaccount) needToAnswer() (bool, error) {
 	if resp.StatusCode == 403 {
 		return true, nil
 	}
-	return true, errors.New(fmt.Sprintf("Status of %v in needToAnswer not expected!", resp.Status))
+	return true, fmt.Errorf("status of %v in needToAnswer not expected", resp.Status)
 }
 
 type submitPostJson struct {
@@ -230,10 +234,10 @@ type submitPostJson struct {
 
 func (account *MCaccount) submitAnswers() error {
 	if len(account.SecurityAnswers) != 3 {
-		return errors.New("Not enough security question answers provided!")
+		return errors.New("not enough security question answers provided")
 	}
 	if len(account.SecurityQuestions) != 3 {
-		return errors.New("Security questions not properly loaded!")
+		return errors.New("security questions not properly loaded")
 	}
 	var jsonContent []submitPostJson
 	for i, sq := range account.SecurityQuestions {
