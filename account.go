@@ -420,12 +420,12 @@ func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 }
 
 type NameChangeReturn struct {
-	account     MCaccount
-	username    string
-	changedName bool
-	statusCode  int
-	sendTime    time.Time
-	receiveTime time.Time
+	Account     MCaccount
+	Username    string
+	ChangedName bool
+	StatusCode  int
+	SendTime    time.Time
+	ReceiveTime time.Time
 }
 
 func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (NameChangeReturn, error) {
@@ -445,12 +445,12 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 
 	if err != nil {
 		return NameChangeReturn{
-			account:     MCaccount{},
-			username:    username,
-			changedName: false,
-			statusCode:  0,
-			sendTime:    time.Time{},
-			receiveTime: time.Time{},
+			Account:     MCaccount{},
+			Username:    username,
+			ChangedName: false,
+			StatusCode:  0,
+			SendTime:    time.Time{},
+			ReceiveTime: time.Time{},
 		}, err
 	}
 
@@ -464,12 +464,12 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	sendTime := time.Now()
 	if err != nil {
 		return NameChangeReturn{
-			account:     MCaccount{},
-			username:    username,
-			changedName: false,
-			statusCode:  0,
-			sendTime:    sendTime,
-			receiveTime: time.Time{},
+			Account:     MCaccount{},
+			Username:    username,
+			ChangedName: false,
+			StatusCode:  0,
+			SendTime:    sendTime,
+			ReceiveTime: time.Time{},
 		}, err
 	}
 
@@ -480,12 +480,12 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	status, err := strconv.Atoi(string(recvd[9:12]))
 
 	toRet := NameChangeReturn{
-		account:     *account,
-		username:    username,
-		changedName: status < 300,
-		statusCode:  status,
-		sendTime:    sendTime,
-		receiveTime: recvTime,
+		Account:     *account,
+		Username:    username,
+		ChangedName: status < 300,
+		StatusCode:  status,
+		SendTime:    sendTime,
+		ReceiveTime: recvTime,
 	}
 	return toRet, nil
 }
