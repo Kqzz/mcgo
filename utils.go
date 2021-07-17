@@ -1,10 +1,8 @@
 package mcgo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,8 +10,8 @@ import (
 )
 
 type Droptime struct {
-	droptime time.Time
-	username string
+	Droptime time.Time
+	Username string
 }
 
 // https://stackoverflow.com/a/68240817/13312615
@@ -24,50 +22,7 @@ func SameErrorMessage(err, target error) bool {
 	return err.Error() == target.Error()
 }
 
-type teunResponse struct {
-	UNIX int64  `json:"UNIX"`
-	UTC  string `json:"UTC"`
-}
-
-func getDroptimeTeunAPI(username string) (Droptime, error) {
-	url := fmt.Sprintf("https://api.teun.lol/droptime/%v", username)
-	resp, err := http.Get(url)
-	if err != nil {
-		return Droptime{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 300 {
-		droptime := teunResponse{
-			UNIX: 0,
-			UTC:  "",
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return Droptime{}, err
-		}
-		err = json.Unmarshal(body, &droptime)
-
-		fmt.Println(droptime)
-
-		return Droptime{
-			time.Unix(droptime.UNIX, 0),
-			username,
-		}, nil
-
-	}
-
-	return Droptime{}, nil
-
-}
-
-func manualDroptime(droptime int64) time.Time {
-	droptimeParsed := time.Unix(droptime, 0)
-	return droptimeParsed
-}
-
-func nameAvailability(username string) (string, error) {
+func NameAvailability(username string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("https://api.mojang.com/user/profile/agent/minecraft/name/%v", username))
 
 	if err != nil {
@@ -83,10 +38,10 @@ func nameAvailability(username string) (string, error) {
 	}
 
 	if resp.StatusCode == 429 {
-		return "", errors.New("Mojang API ratelimit reached!")
+		return "", errors.New("mojang API ratelimit reached")
 	}
 
-	return "", errors.New(fmt.Sprintf("This should not be possible! | Got status %v on request for name availability", resp.StatusCode))
+	return "", fmt.Errorf("this should not be possible! | Got status %v on request for name availability", resp.StatusCode)
 }
 
 func generatePayload(method string, reqUrl string, headers http.Header, body string) (string, error) {

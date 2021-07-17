@@ -257,6 +257,10 @@ func (account *MCaccount) submitAnswers() error {
 
 	resp, err := http.DefaultClient.Do(req)
 
+	if err != nil {
+		return err
+	}
+
 	if resp.StatusCode == 204 {
 		return nil
 	}
@@ -264,9 +268,9 @@ func (account *MCaccount) submitAnswers() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 403 {
-		return errors.New("At least one security question answer was incorrect!")
+		return errors.New("at least one security question answer was incorrect")
 	}
-	return errors.New(fmt.Sprintf("Got status %v on post request for sqs", resp.Status))
+	return fmt.Errorf("got status %v on post request for sqs", resp.Status)
 }
 
 // Runs all steps necessary to have a fully authenticated mojang account. It will submit email & pass and securitty questions (if necessary).
@@ -333,12 +337,12 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 	if resp.StatusCode == 200 {
 		return false, &RequestError{
 			StatusCode: resp.StatusCode,
-			Err:        errors.New("successfully created profile with name test.. unintended behavior, function is meant to check if gc is applied."),
+			Err:        errors.New("successfully created profile with name test.. unintended behavior, function is meant to check if gc is applied"),
 		}
 	} else if resp.StatusCode == 401 {
 		return false, &RequestError{
 			StatusCode: resp.StatusCode,
-			Err:        errors.New("Received unauthorized response!"),
+			Err:        errors.New("received unauthorized response"),
 		}
 	} else if resp.StatusCode == 400 {
 		var respError HasGcAppliedResp
@@ -373,7 +377,7 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 
 	}
 
-	return false, fmt.Errorf("Got status %v, expected 200, 401, or 400.", resp.StatusCode)
+	return false, fmt.Errorf("got status %v, expected 200, 401, or 400", resp.StatusCode)
 
 }
 
@@ -486,7 +490,18 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 
 	conn.Read(recvd)
 	recvTime := time.Now()
-	status, _ := strconv.Atoi(string(recvd[9:12]))
+	status, err := strconv.Atoi(string(recvd[9:12]))
+
+	if err != nil {
+		return NameChangeReturn{
+			Account:     MCaccount{},
+			Username:    username,
+			ChangedName: false,
+			StatusCode:  0,
+			SendTime:    sendTime,
+			ReceiveTime: time.Time{},
+		}, err
+	}
 
 	toRet := NameChangeReturn{
 		Account:     *account,

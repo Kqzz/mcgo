@@ -130,157 +130,161 @@ func (account *MCaccount) MicrosoftAuthenticate(clientID, ClientSecret string) e
 
 	go authServerHandler(x, state, msConfig)
 
-	select {
-	case tokenResult := <-x:
-		{
-			if tokenResult.Err != nil {
-				return tokenResult.Err
+	tokenResult := <-x
+
+	if tokenResult.Err != nil {
+		return tokenResult.Err
+	}
+	token := tokenResult.Value
+	client := msConfig.Client(context.Background(), tokenResult.Value)
+	client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			Renegotiation:      tls.RenegotiateOnceAsClient,
+			InsecureSkipVerify: true,
+		},
+	}
+
+	data := xBLSignInBody{
+		Properties: struct {
+			Authmethod string "json:\"AuthMethod\""
+			Sitename   string "json:\"SiteName\""
+			Rpsticket  string "json:\"RpsTicket\""
+		}{
+			Authmethod: "RPS",
+			Sitename:   "user.auth.xboxlive.com",
+			Rpsticket:  "d=" + token.AccessToken,
+		},
+		Relyingparty: "http://auth.xboxlive.com",
+		Tokentype:    "JWT",
+	}
+
+	encodedBody, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", "https://user.auth.xboxlive.com/user/authenticate", bytes.NewReader(encodedBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-xbl-contract-version", "1")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	respBodyBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return err
+	}
+
+	var respBody XBLSignInResp
+
+	json.Unmarshal(respBodyBytes, &respBody)
+
+	uhs := respBody.Displayclaims.Xui[0].Uhs
+	XBLToken := respBody.Token
+
+	xstsBody := xSTSPostBody{
+		Properties: struct {
+			Sandboxid  string   "json:\"SandboxId\""
+			Usertokens []string "json:\"UserTokens\""
+		}{
+			Sandboxid: "RETAIL",
+			Usertokens: []string{
+				XBLToken,
+			},
+		},
+		Relyingparty: "rp://api.minecraftservices.com/",
+		Tokentype:    "JWT",
+	}
+
+	encodedXstsBody, err := json.Marshal(xstsBody)
+	if err != nil {
+		return err
+	}
+	req, err = http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewReader(encodedXstsBody))
+	if err != nil {
+		return err
+	}
+
+	resp, err = client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	respBodyBytes, err = ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode == 401 {
+		var authorizeXstsFail xSTSAuthorizeResponseFail
+		json.Unmarshal(respBodyBytes, &authorizeXstsFail)
+		switch authorizeXstsFail.Xerr {
+		case 2148916238:
+			{
+				return errors.New("microsoft account belongs to someone under 18! add to family for this to work")
 			}
-			token := tokenResult.Value
-			client := msConfig.Client(context.Background(), tokenResult.Value)
-			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{
-					Renegotiation:      tls.RenegotiateOnceAsClient,
-					InsecureSkipVerify: true,
-				},
+		case 2148916233:
+			{
+				return errors.New("you have no xbox account! Sign up for one to continue")
 			}
-
-			data := xBLSignInBody{
-				Properties: struct {
-					Authmethod string "json:\"AuthMethod\""
-					Sitename   string "json:\"SiteName\""
-					Rpsticket  string "json:\"RpsTicket\""
-				}{
-					Authmethod: "RPS",
-					Sitename:   "user.auth.xboxlive.com",
-					Rpsticket:  "d=" + token.AccessToken,
-				},
-				Relyingparty: "http://auth.xboxlive.com",
-				Tokentype:    "JWT",
+		default:
+			{
+				return fmt.Errorf("got error code %v when trying to authorize XSTS token", authorizeXstsFail.Xerr)
 			}
-
-			encodedBody, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			req, err := http.NewRequest("POST", "https://user.auth.xboxlive.com/user/authenticate", bytes.NewReader(encodedBody))
-			if err != nil {
-				return err
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Accept", "application/json")
-			req.Header.Set("x-xbl-contract-version", "1")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return err
-			}
-
-			respBodyBytes, err := ioutil.ReadAll(resp.Body)
-
-			var respBody XBLSignInResp
-
-			json.Unmarshal(respBodyBytes, &respBody)
-
-			uhs := respBody.Displayclaims.Xui[0].Uhs
-			XBLToken := respBody.Token
-
-			xstsBody := xSTSPostBody{
-				Properties: struct {
-					Sandboxid  string   "json:\"SandboxId\""
-					Usertokens []string "json:\"UserTokens\""
-				}{
-					Sandboxid: "RETAIL",
-					Usertokens: []string{
-						XBLToken,
-					},
-				},
-				Relyingparty: "rp://api.minecraftservices.com/",
-				Tokentype:    "JWT",
-			}
-
-			encodedXstsBody, err := json.Marshal(xstsBody)
-			if err != nil {
-				return err
-			}
-			req, err = http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewReader(encodedXstsBody))
-			if err != nil {
-				return err
-			}
-
-			resp, err = client.Do(req)
-
-			if err != nil {
-				return err
-			}
-
-			respBodyBytes, err = ioutil.ReadAll(resp.Body)
-
-			if resp.StatusCode == 401 {
-				var authorizeXstsFail xSTSAuthorizeResponseFail
-				json.Unmarshal(respBodyBytes, &authorizeXstsFail)
-				switch authorizeXstsFail.Xerr {
-				case 2148916238:
-					{
-						return errors.New("microsoft account belongs to someone under 18! add to family for this to work")
-					}
-				case 2148916233:
-					{
-						return errors.New("you have no xbox account! Sign up for one to continue")
-					}
-				default:
-					{
-						return fmt.Errorf("got error code %v when trying to authorize XSTS token", authorizeXstsFail.Xerr)
-					}
-				}
-			}
-
-			var xstsAuthorizeResp xSTSAuthorizeResponse
-			json.Unmarshal(respBodyBytes, &xstsAuthorizeResp)
-
-			xstsToken := xstsAuthorizeResp.Token
-
-			mojangBearerBody := msGetMojangbearerBody{
-				Identitytoken:       "XBL3.0 x=" + uhs + ";" + xstsToken,
-				Ensurelegacyenabled: true,
-			}
-
-			mojangBearerBodyEncoded, err := json.Marshal(mojangBearerBody)
-
-			if err != nil {
-				return err
-			}
-
-			req, err = http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewReader(mojangBearerBodyEncoded))
-
-			req.Header.Set("Content-Type", "application/json")
-
-			if err != nil {
-				return err
-			}
-
-			resp, err = client.Do(req)
-			if err != nil {
-				return err
-			}
-
-			mcBearerResponseBytes, err := ioutil.ReadAll(resp.Body)
-
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(string(mcBearerResponseBytes))
-
-			var mcBearerResp msGetMojangBearerResponse
-
-			json.Unmarshal(mcBearerResponseBytes, &mcBearerResp)
-
-			account.Bearer = mcBearerResp.AccessToken
-
 		}
 	}
+
+	var xstsAuthorizeResp xSTSAuthorizeResponse
+	json.Unmarshal(respBodyBytes, &xstsAuthorizeResp)
+
+	xstsToken := xstsAuthorizeResp.Token
+
+	mojangBearerBody := msGetMojangbearerBody{
+		Identitytoken:       "XBL3.0 x=" + uhs + ";" + xstsToken,
+		Ensurelegacyenabled: true,
+	}
+
+	mojangBearerBodyEncoded, err := json.Marshal(mojangBearerBody)
+
+	if err != nil {
+		return err
+	}
+
+	req, err = http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewReader(mojangBearerBodyEncoded))
+
+	req.Header.Set("Content-Type", "application/json")
+
+	if err != nil {
+		return err
+	}
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	mcBearerResponseBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(mcBearerResponseBytes))
+
+	var mcBearerResp msGetMojangBearerResponse
+
+	json.Unmarshal(mcBearerResponseBytes, &mcBearerResp)
+
+	account.Bearer = mcBearerResp.AccessToken
 
 	return nil
 }
