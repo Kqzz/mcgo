@@ -103,7 +103,10 @@ func (account *MCaccount) authenticate() error {
 		if err != nil {
 			return err
 		}
-		json.Unmarshal(b, &AccountInfo)
+		err = json.Unmarshal(b, &AccountInfo)
+		if err != nil {
+			return err
+		}
 
 		account.Bearer = AccountInfo.Accesstoken
 		account.Username = AccountInfo.User.Username
