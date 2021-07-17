@@ -473,11 +473,13 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		}, err
 	}
 
+	time.Sleep(time.Until(changeTime))
+
 	conn.Write([]byte("\r\n"))
 
 	conn.Read(recvd)
 	recvTime := time.Now()
-	status, err := strconv.Atoi(string(recvd[9:12]))
+	status, _ := strconv.Atoi(string(recvd[9:12]))
 
 	toRet := NameChangeReturn{
 		Account:     *account,
