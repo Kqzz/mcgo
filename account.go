@@ -440,6 +440,8 @@ type NameChangeReturn struct {
 }
 
 func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (NameChangeReturn, error) {
+	
+	time.Sleep(time.Until(changeTime))
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "Bearer "+account.Bearer)
@@ -483,8 +485,6 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 			ReceiveTime: time.Time{},
 		}, err
 	}
-
-	time.Sleep(time.Until(changeTime))
 
 	conn.Write([]byte("\r\n"))
 
