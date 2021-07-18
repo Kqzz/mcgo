@@ -465,21 +465,17 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		}, err
 	}
 
-	if changeTime.After(time.Now()) {
-		// wait until 20s before nc
-		time.Sleep(time.Until(changeTime) - time.Second*20)
-	}
+	time.Sleep(time.Until(changeTime) - time.Second*20)
 
 	conn, err := tls.Dial("tcp", "api.minecraftservices.com"+":443", nil)
 	conn.Write([]byte(payload))
-	sendTime := time.Now()
 	if err != nil {
 		return NameChangeReturn{
 			Account:     MCaccount{},
 			Username:    username,
 			ChangedName: false,
 			StatusCode:  0,
-			SendTime:    sendTime,
+			SendTime:    time.Time{},
 			ReceiveTime: time.Time{},
 		}, err
 	}
@@ -487,6 +483,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	time.Sleep(time.Until(changeTime))
 
 	conn.Write([]byte("\r\n"))
+	sendTime := time.Now()
 
 	conn.Read(recvd)
 	recvTime := time.Now()
