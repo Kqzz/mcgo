@@ -55,6 +55,6 @@ func generatePayload(method string, reqUrl string, headers http.Header, body str
 	for header, value := range headers {
 		headerString += fmt.Sprintf("%s: %s\r\n", header, value[0])
 	}
-	payload := fmt.Sprintf("%s %s HTTP/1.1\r\nHost: %s\r\n%s\r\n%s", strings.ToUpper(method), path, host, headerString, body)
+	payload := fmt.Sprintf("%s %s HTTP/1.1\r\nHost: %s\r\n%s%s", strings.ToUpper(method), path, host, headerString, body)
 	return payload, nil
 }
