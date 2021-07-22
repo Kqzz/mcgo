@@ -30,8 +30,9 @@ func (account *MCaccount) AuthenticatedReq(method string, url string, body io.Re
 type AccType string
 
 const (
-	Ms AccType = "ms"
-	Mj AccType = "mj"
+	Ms   AccType = "ms"
+	Mj   AccType = "mj"
+	MsPr AccType = "mspr"
 )
 
 // TODO: Use RequestError for status-code-related errors
