@@ -10,7 +10,7 @@ func TestGenPayload(t *testing.T) {
 		"Authorization": {"Hi"},
 	}
 
-	validPayload := "POST /signup HTTP/1.1\r\nHost: example.com\r\nAuthorization: Hi\r\n"
+	validPayload := "POST /signup HTTP/1.1\r\nHost: example.com\r\nAuthorization: Hi\r\n\r\n"
 	payload, err := generatePayload("POST", "http://example.com/signup", header, "")
 
 	if err != nil || payload != validPayload {

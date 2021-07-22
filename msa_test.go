@@ -1,17 +1,18 @@
 package mcgo
 
 import (
-	"fmt"
+	"os"
 	"testing"
 )
 
 func TestMsa(t *testing.T) {
+	email := os.Getenv("EMAIL")
+	pass := os.Getenv("PASSWORD")
 	acc := MCaccount{
-		Email:    "replace with valid email",
-		Password: "replace with valid password",
+		Email:    email,
+		Password: pass,
 	}
-	if err := acc.MicrosoftAuthenticate(); err != nil {
+	if err := acc.MicrosoftAuthenticate(); err != nil || acc.Bearer == "" {
 		t.Fatal(err)
 	}
-	fmt.Println(acc.Bearer)
 }
