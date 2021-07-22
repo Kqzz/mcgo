@@ -452,6 +452,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		payload, err = generatePayload("PUT", fmt.Sprintf("https://api.minecraftservices.com/minecraft/profile/name/%s", username), headers, "")
 	}
 
+	payload = payload[:len(payload)-2]
 	recvd := make([]byte, 12)
 
 	if err != nil {
