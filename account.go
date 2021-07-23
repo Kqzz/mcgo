@@ -112,8 +112,6 @@ func (account *MCaccount) authenticate() error {
 		account.Bearer = AccountInfo.Accesstoken
 		account.Username = AccountInfo.User.Username
 		account.UUID = AccountInfo.User.ID
-		account.Bearer = AccountInfo.Accesstoken
-
 		return nil
 
 	} else if resp.StatusCode == 403 {
