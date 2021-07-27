@@ -8,7 +8,6 @@ import (
 	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/chat"
 	pk "github.com/Tnze/go-mc/net/packet"
-	"github.com/Tnze/go-mc/yggdrasil"
 	"github.com/google/uuid"
 )
 
@@ -17,15 +16,9 @@ var client *bot.Client
 func (account *MCaccount) ClaimNamemc() (string, error) {
 	client = bot.NewClient()
 
-	resp, err := yggdrasil.Authenticate(account.Email, account.Password)
-	if err != nil {
-		return "", err
-	}
-
-	id, name := resp.SelectedProfile()
-	client.Auth.Name = name
-	client.Auth.UUID = id
-	client.Auth.AsTk = resp.AccessToken()
+	client.Auth.Name = account.Username
+	client.Auth.UUID = account.UUID
+	client.Auth.AsTk = account.Bearer
 
 	claimUrlChan := make(chan string)
 
@@ -34,7 +27,7 @@ func (account *MCaccount) ClaimNamemc() (string, error) {
 			go func() {
 				// sleep and send /namemc cmd
 				time.Sleep(time.Millisecond * 500)
-				err = client.Conn.WritePacket(pk.Marshal(
+				client.Conn.WritePacket(pk.Marshal(
 					0x03,
 					pk.String("/namemc"),
 				))
@@ -52,7 +45,7 @@ func (account *MCaccount) ClaimNamemc() (string, error) {
 		},
 	}.Attach(client)
 
-	err = client.JoinServer("blockmania.com")
+	err := client.JoinServer("blockmania.com")
 	if err != nil {
 		return "", err
 	}

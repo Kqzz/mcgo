@@ -1,6 +1,7 @@
 package mcgo
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -12,8 +13,11 @@ func TestClaimNamemc(t *testing.T) {
 		Email:    email,
 		Password: pass,
 	}
-	_, err := acc.ClaimNamemc()
+	acc.MojangAuthenticate()
+	acc.LoadAccountInfo()
+	url, err := acc.ClaimNamemc()
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(url)
 }
