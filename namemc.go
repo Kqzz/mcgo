@@ -38,17 +38,21 @@ func (account *MCaccount) ClaimNamemc() {
 
 	basic.EventsListener{
 		GameStart: func() error {
-			time.Sleep(time.Second * 2)
-			err = client.Conn.WritePacket(pk.Marshal(
-				0x03,
-				chat.Message{Text: "/namemc"},
-				pk.Byte(0),
-			))
-			fmt.Println(err)
+			go func() {
+				time.Sleep(time.Second * 2)
+				err = client.Conn.WritePacket(pk.Marshal(
+					0x03,
+					pk.String(chat.Message{Text: "/namemc"}.String()),
+					pk.Byte(0),
+				))
+				fmt.Println(err)
+			}()
 			return nil
 		},
 		ChatMsg: chatMsgHandlerd,
-		Disconnect: func(_ chat.Message) error {
+		Disconnect: func(m chat.Message) error {
+
+			fmt.Println(m.ClearString())
 			fmt.Println("disconnecting...")
 			return nil
 		},
