@@ -3,11 +3,14 @@ package mcgo
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/bot/screen"
 	"github.com/Tnze/go-mc/chat"
+	pk "github.com/Tnze/go-mc/net/packet"
+	"github.com/Tnze/go-mc/yggdrasil"
 	"github.com/google/uuid"
 )
 
@@ -18,9 +21,15 @@ var screenManager *screen.Manager
 func (account *MCaccount) ClaimNamemc() {
 	client = bot.NewClient()
 
-	client.Auth.AsTk = account.Bearer
-	client.Auth.Name = account.Username
-	client.Auth.UUID = account.UUID
+	resp, err := yggdrasil.Authenticate(account.Email, account.Password)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	id, name := resp.SelectedProfile()
+	client.Auth.Name = name
+	client.Auth.UUID = id
+	client.Auth.AsTk = resp.AccessToken()
 
 	player = basic.NewPlayer(client, basic.Settings{
 		ChatMode:   1,
@@ -29,11 +38,17 @@ func (account *MCaccount) ClaimNamemc() {
 
 	basic.EventsListener{
 		GameStart: func() error {
-			fmt.Println("Hey")
+			time.Sleep(time.Second * 2)
+			err = client.Conn.WritePacket(pk.Marshal(
+				0x03,
+				chat.Message{Text: "/namemc"},
+				pk.Byte(0),
+			))
+			fmt.Println(err)
 			return nil
 		},
 		ChatMsg: chatMsgHandlerd,
-		Disconnect: func(chat.Message) error {
+		Disconnect: func(_ chat.Message) error {
 			fmt.Println("disconnecting...")
 			return nil
 		},
@@ -49,7 +64,7 @@ func (account *MCaccount) ClaimNamemc() {
 		},
 	}.Attach(client)
 
-	err := client.JoinServer("blockmania.com")
+	err = client.JoinServer("blockmania.com")
 	if err != nil {
 		log.Fatal(err)
 	}
