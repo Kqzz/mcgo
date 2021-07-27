@@ -6,8 +6,8 @@ import (
 )
 
 func TestMsa(t *testing.T) {
-	email := os.Getenv("EMAIL")
-	pass := os.Getenv("PASSWORD")
+	email := os.Getenv("MS_EMAIL")
+	pass := os.Getenv("MS_PASSWORD")
 	acc := MCaccount{
 		Email:    email,
 		Password: pass,
