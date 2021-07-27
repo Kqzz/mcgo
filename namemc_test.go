@@ -12,5 +12,8 @@ func TestClaimNamemc(t *testing.T) {
 		Email:    email,
 		Password: pass,
 	}
-	acc.ClaimNamemc()
+	_, err := acc.ClaimNamemc()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
