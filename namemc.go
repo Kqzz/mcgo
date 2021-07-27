@@ -6,7 +6,6 @@ import (
 
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
-	"github.com/Tnze/go-mc/bot/screen"
 	"github.com/Tnze/go-mc/chat"
 	pk "github.com/Tnze/go-mc/net/packet"
 	"github.com/Tnze/go-mc/yggdrasil"
@@ -14,8 +13,6 @@ import (
 )
 
 var client *bot.Client
-var player *basic.Player
-var screenManager *screen.Manager
 
 func (account *MCaccount) ClaimNamemc() (string, error) {
 	client = bot.NewClient()
@@ -29,11 +26,6 @@ func (account *MCaccount) ClaimNamemc() (string, error) {
 	client.Auth.Name = name
 	client.Auth.UUID = id
 	client.Auth.AsTk = resp.AccessToken()
-
-	player = basic.NewPlayer(client, basic.Settings{
-		ChatMode:   1,
-		ChatColors: false,
-	})
 
 	claimUrlChan := make(chan string)
 
