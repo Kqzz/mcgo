@@ -16,4 +16,10 @@ func TestGenPayload(t *testing.T) {
 	if err != nil || payload != validPayload {
 		t.Fatalf("err: %v | payload: %v | expected payload: %v", err, payload, validPayload)
 	}
+
+	validPayload = "POST /signup HTTP/1.1\r\nHost: example.com\r\nAuthorization: Hi\r\n\r\n{\"username\": \"hello\"}\r\n"
+	payload, err = generatePayload("POST", "http://example.com/signup", header, "{\"username\": \"hello\"}")
+	if err != nil || payload != validPayload {
+		t.Fatalf("err: %v | payload: %v | expected payload: %v", err, payload, validPayload)
+	}
 }
