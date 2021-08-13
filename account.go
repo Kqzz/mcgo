@@ -450,7 +450,6 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		// and that
 	}
 
-	payload = payload[:len(payload)-2]
 	recvd := make([]byte, 12)
 
 	time.Sleep(time.Until(changeTime) - time.Second*20)
