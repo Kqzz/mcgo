@@ -440,30 +440,18 @@ type NameChangeReturn struct {
 
 func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (NameChangeReturn, error) {
 
-	headers := make(http.Header)
-	headers.Add("Authorization", "Bearer "+account.Bearer)
-	headers.Set("Accept", "application/json")
-	var err error
 	var payload string
 	if createProfile {
-		payload, err = generatePayload("POST", "https://api.minecraftservices.com/minecraft/profile", headers, fmt.Sprintf(`{"profileName": "%s"}`, username))
+		data := fmt.Sprintf(`{"profileName": "%s"}`, username)
+		payload = fmt.Sprintf("POST /minecraft/profile HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s\r\n", account.Bearer, len(data), data)
+		// credit to peet for that ^
 	} else {
-		payload, err = generatePayload("PUT", fmt.Sprintf("https://api.minecraftservices.com/minecraft/profile/name/%s", username), headers, "")
+		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\n", username, account.Bearer)
+		// and that
 	}
 
 	payload = payload[:len(payload)-2]
 	recvd := make([]byte, 12)
-
-	if err != nil {
-		return NameChangeReturn{
-			Account:     MCaccount{},
-			Username:    username,
-			ChangedName: false,
-			StatusCode:  0,
-			SendTime:    time.Time{},
-			ReceiveTime: time.Time{},
-		}, err
-	}
 
 	time.Sleep(time.Until(changeTime) - time.Second*20)
 
