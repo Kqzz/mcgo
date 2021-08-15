@@ -443,7 +443,19 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 	var payload string
 	if createProfile {
 		data := fmt.Sprintf(`{"profileName": "%s"}`, username)
-		payload = fmt.Sprintf("POST /minecraft/profile HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s", account.Bearer, len(data), data)
+		payload = fmt.Sprintf(
+			"POST /minecraft/profile HTTP/1.1\r\n"+
+				"Host: api.minecraftservices.com\r\n"+
+				"Authorization: Bearer %s\r\n"+
+				"Accept: application/json\r\n"+
+				"Content-Type: application/json\r\n"+
+				"Content-Length: %d\r\n"+
+				"\r\n"+
+				"%s",
+			account.Bearer,
+			len(data),
+			data,
+		)
 		// credit to peet for that ^
 	} else {
 		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\n", username, account.Bearer)
