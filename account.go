@@ -447,7 +447,6 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 			"POST /minecraft/profile HTTP/1.1\r\n"+
 				"Host: api.minecraftservices.com\r\n"+
 				"Authorization: Bearer %s\r\n"+
-				"Accept: application/json\r\n"+
 				"Content-Type: application/json\r\n"+
 				"Content-Length: %d\r\n"+
 				"\r\n"+
@@ -457,17 +456,18 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 			data,
 		)
 		// credit to peet for that ^
+		// and credit to tenscape for teaching me how HTTP works lol
 	} else {
-		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\n", username, account.Bearer)
+		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\n\r\n", username, account.Bearer)
 		// and that
 	}
 
-	recvd := make([]byte, 12)
+	recvd := make([]byte, 4096)
 
 	time.Sleep(time.Until(changeTime) - time.Second*20)
 
 	conn, err := tls.Dial("tcp", "api.minecraftservices.com"+":443", nil)
-	conn.Write([]byte(payload))
+	conn.Write([]byte(payload[:len(payload)-2]))
 	if err != nil {
 		return NameChangeReturn{
 			Account:     MCaccount{},
@@ -481,11 +481,12 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 
 	time.Sleep(time.Until(changeTime))
 
-	conn.Write([]byte("\r\n"))
+	conn.Write([]byte(payload[len(payload)-2:]))
 	sendTime := time.Now()
 
 	conn.Read(recvd)
 	recvTime := time.Now()
+	conn.Close()
 	status, err := strconv.Atoi(string(recvd[9:12]))
 
 	if err != nil {
