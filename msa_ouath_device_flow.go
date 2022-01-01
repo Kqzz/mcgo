@@ -227,7 +227,7 @@ func authWithToken(account *MCaccount, access_token_from_ms string) error {
 	return nil
 }
 
-func InitAuthFlow(account *MCaccount) error {
+func (account *MCaccount) InitAuthFlow() error {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return err
