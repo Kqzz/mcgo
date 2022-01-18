@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,50 +26,6 @@ func (account *MCaccount) AuthenticatedReq(method string, url string, body io.Re
 	req.Header.Set("Content-Type", "application/json")
 
 	return req, nil
-}
-
-type AccType string
-
-const (
-	Ms   AccType = "ms"
-	Mj   AccType = "mj"
-	MsPr AccType = "mspr"
-)
-
-// TODO: Use RequestError for status-code-related errors
-type RequestError struct {
-	StatusCode int
-	Err        error
-}
-
-func (r *RequestError) Error() string {
-	return r.Err.Error()
-}
-
-// represents a minecraft account
-type MCaccount struct {
-	Email             string
-	Password          string
-	SecurityQuestions []SqAnswer
-	SecurityAnswers   []string
-	Bearer            string
-	UUID              string
-	Username          string
-	Type              AccType
-	Authenticated     bool
-}
-
-type authenticateReqResp struct {
-	User struct {
-		Properties []struct {
-			Name  string `json:"name"`
-			Value string `json:"value"`
-		} `json:"properties"`
-		Username string `json:"username"`
-		ID       string `json:"id"`
-	} `json:"user"`
-	Accesstoken string `json:"accessToken"`
-	Clienttoken string `json:"clientToken"`
 }
 
 func (account *MCaccount) authenticate() error {
@@ -120,16 +77,6 @@ func (account *MCaccount) authenticate() error {
 	return errors.New("reached end of authenticate function! Shouldn't be possible. most likely 'failed to auth' status code changed")
 }
 
-type SqAnswer struct {
-	Answer struct {
-		ID int `json:"id"`
-	} `json:"answer"`
-	Question struct {
-		ID       int    `json:"id"`
-		Question string `json:"question"`
-	} `json:"question"`
-}
-
 func (account *MCaccount) loadSecurityQuestions() error {
 	req, err := account.AuthenticatedReq("GET", "https://api.mojang.com/user/security/challenges", nil)
 	if err != nil {
@@ -163,11 +110,6 @@ func (account *MCaccount) loadSecurityQuestions() error {
 	account.SecurityQuestions = sqAnswers
 
 	return nil
-}
-
-type accInfoResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
 }
 
 // load account information (username, uuid) into accounts attributes, if not already there. When using Mojang authentication it is not necessary to load this info, as it will be automatically loaded.
@@ -227,11 +169,6 @@ func (account *MCaccount) needToAnswer() (bool, error) {
 		return true, nil
 	}
 	return true, fmt.Errorf("status of %v in needToAnswer not expected", resp.Status)
-}
-
-type submitPostJson struct {
-	ID     int    `json:"id"`
-	Answer string `json:"answer"`
 }
 
 func (account *MCaccount) submitAnswers() error {
@@ -308,17 +245,6 @@ func (account *MCaccount) MojangAuthenticate() error {
 	return nil
 }
 
-type HasGcAppliedResp struct {
-	Path             string `json:"path"`
-	ErrorType        string `json:"errorType"`
-	Error            string `json:"error"`
-	ErrorMessage     string `json:"errorMessage"`
-	DeveloperMessage string `json:"developerMessage"`
-	Details          struct {
-		Status string `json:"status"`
-	} `json:"details"`
-}
-
 func (account *MCaccount) HasGcApplied() (bool, error) {
 	bodyStr := `{"profileName": "test"}`
 	req, err := account.AuthenticatedReq("POST", "https://api.minecraftservices.com/minecraft/profile", bytes.NewReader([]byte(bodyStr)))
@@ -344,7 +270,7 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 			Err:        errors.New("received unauthorized response"),
 		}
 	} else if resp.StatusCode == 400 {
-		var respError HasGcAppliedResp
+		var respError hasGcAppliedResp
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return false, err
@@ -376,27 +302,19 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 
 	}
 
-	return false, fmt.Errorf("got status %v, expected 200, 401, or 400", resp.StatusCode)
+	return false, &RequestError{StatusCode: resp.StatusCode, Err: errors.New("status code should not be possible")}
 
-}
-
-// Holds name change information for an account, the time the current account was created, it's name was most recently changed, and if it can currently change its name.
-type nameChangeInfoResponse struct {
-	Changedat         time.Time `json:"changedAt"`
-	Createdat         time.Time `json:"createdAt"`
-	Namechangeallowed bool      `json:"nameChangeAllowed"`
 }
 
 // grab information on the availability of name change for this account
 func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
-	client := &http.Client{}
 	req, err := account.AuthenticatedReq("GET", "https://api.minecraftservices.com/minecraft/profile/namechange", nil)
 
 	if err != nil {
 		return nameChangeInfoResponse{}, err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nameChangeInfoResponse{}, err
 	}
@@ -427,15 +345,6 @@ func (account *MCaccount) NameChangeInfo() (nameChangeInfoResponse, error) {
 	}
 
 	return parsedNameChangeInfo, nil
-}
-
-type NameChangeReturn struct {
-	Account     MCaccount
-	Username    string
-	ChangedName bool
-	StatusCode  int
-	SendTime    time.Time
-	ReceiveTime time.Time
 }
 
 func (account *MCaccount) ChangeName(username string, changeTime time.Time, createProfile bool) (NameChangeReturn, error) {
@@ -509,4 +418,24 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		ReceiveTime: recvTime,
 	}
 	return toRet, nil
+}
+
+func (account *MCaccount) ChangeSkinFromUrl(url, variant string) error {
+	body := fmt.Sprintf(`{"url": "%v", "variant": "%v"}`, url, variant)
+	req, err := account.AuthenticatedReq("POST", "https://api.minecraftservices.com/minecraft/profile/skins", strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return errors.New("unauthorized")
+	}
+
+	return nil
 }
