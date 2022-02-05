@@ -246,7 +246,7 @@ func (account *MCaccount) InitAuthFlow() error {
 
 	reqParams := fmt.Sprintf("client_id=%s&scope=XboxLive.signin", client_id)
 
-	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode", bytes.NewBuffer([]byte(reqParams)))
+	req, _ := http.NewRequest("POST", "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode", bytes.NewBuffer([]byte(reqParams)))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -294,7 +294,7 @@ func pollEndpoint(account *MCaccount, device_code string, interval int) error {
 	}
 
 	reqParams := fmt.Sprintf("grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=%s&client_id=%s", device_code, client_id)
-	for true {
+	for {
 		time.Sleep(sleepDuration)
 		req, err := http.NewRequest("POST", "https://login.microsoftonline.com/consumers/oauth2/v2.0/token", bytes.NewBuffer([]byte(reqParams)))
 		if err != nil {
@@ -336,6 +336,4 @@ func pollEndpoint(account *MCaccount, device_code string, interval int) error {
 			return errors.New("status code response not 200 or 400")
 		}
 	}
-
-	return nil
 }

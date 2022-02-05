@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -42,22 +40,4 @@ func NameAvailability(username string) (string, error) {
 	}
 
 	return "", fmt.Errorf("this should not be possible! | Got status %v on request for name availability", resp.StatusCode)
-}
-
-func generatePayload(method string, reqUrl string, headers http.Header, body string) (string, error) {
-	parsedUrl, err := url.Parse(reqUrl)
-	if err != nil {
-		return "", err
-	}
-	host := parsedUrl.Host
-	path := parsedUrl.Path
-	var headerString string
-	for header, value := range headers {
-		headerString += fmt.Sprintf("%s: %s\r\n", header, value[0])
-	}
-	if body != "" {
-		body = "\r\n" + body
-	}
-	payload := fmt.Sprintf("%s %s HTTP/1.1\r\nHost: %s\r\n%s%s\r\n", strings.ToUpper(method), path, host, headerString, body)
-	return payload, nil
 }

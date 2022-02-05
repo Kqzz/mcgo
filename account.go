@@ -259,6 +259,11 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 
 	defer resp.Body.Close()
 
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
 	if resp.StatusCode == 200 {
 		return false, &RequestError{
 			StatusCode: resp.StatusCode,
@@ -271,10 +276,6 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 		}
 	} else if resp.StatusCode == 400 {
 		var respError hasGcAppliedResp
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, err
-		}
 
 		err = json.Unmarshal(bodyBytes, &respError)
 		if err != nil {
@@ -302,7 +303,7 @@ func (account *MCaccount) HasGcApplied() (bool, error) {
 
 	}
 
-	return false, &RequestError{StatusCode: resp.StatusCode, Err: errors.New("status code should not be possible")}
+	return false, &RequestError{StatusCode: resp.StatusCode, Err: fmt.Errorf("got status: %v body: %v", resp.Status, string(bodyBytes))}
 
 }
 
