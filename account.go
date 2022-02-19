@@ -428,6 +428,8 @@ func (account *MCaccount) ChangeSkinFromUrl(url, variant string) error {
 		return err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
