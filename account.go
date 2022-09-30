@@ -365,7 +365,7 @@ func (account *MCaccount) ChangeName(username string, changeTime time.Time, crea
 		// credit to peet for that ^
 		// and credit to tenscape for teaching me how HTTP works lol
 	} else {
-		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer %s\r\n\r\n", username, account.Bearer)
+		payload = fmt.Sprintf("PUT /minecraft/profile/name/%s HTTP/1.1\r\nHost: api.minecraftservices.com\r\nContent-Length: 0\r\nAuthorization: Bearer %s\r\n\r\n", username, account.Bearer)
 		// and that
 	}
 
